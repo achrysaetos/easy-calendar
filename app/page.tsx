@@ -1,103 +1,94 @@
-import Image from "next/image";
+/* eslint-disable @next/next/no-img-element */
+'use client'; // Required for useState and event handlers
+
+import React, { useState } from 'react';
+import EventInput from '../components/EventInput';
+import EventPreview from '../components/EventPreview';
+import ActionButtons from '../components/ActionButtons';
+import { ParsedEvent } from '../types/event'; // Import the ParsedEvent type
+
+// Temporary ParsedEvent type - will move to types/event.ts
+// interface ParsedEvent {  <-- REMOVE THIS BLOCK
+//   title: string;
+//   date: string;
+//   time: string;
+//   location: string;
+//   // originalText: string;
+// }
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [eventText, setEventText] = useState('');
+  const [parsedEvent, setParsedEvent] = useState<ParsedEvent | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
+  const handleEventSubmit = async () => {
+    if (!eventText.trim()) return;
+    setIsLoading(true);
+    setParsedEvent(null);
+    // Simulate API call for now
+    console.log("Submitting event text:", eventText);
+    // In a real scenario, you would call your /api/parse-event endpoint here
+    // For now, let's mock a response after a delay
+    setTimeout(() => {
+      const mockParsedEvent: ParsedEvent = {
+        title: "Mock Event Title",
+        date: "2024-07-20",
+        time: "10:00 AM",
+        location: "Mock Location",
+        originalText: eventText, // Add originalText to mock event
+      };
+      setParsedEvent(mockParsedEvent);
+      setIsLoading(false);
+      console.log("Mock event parsed:", mockParsedEvent);
+    }, 2000);
+  };
+
+  // Mock action handlers
+  const handleAddToCalendar = () => console.log('Add to Calendar clicked', parsedEvent);
+  const handleShare = () => console.log('Share Event clicked', parsedEvent);
+  const handleRemind = () => console.log('Create Reminder clicked', parsedEvent);
+
+  return (
+    <main className="flex min-h-screen flex-col items-center p-6 sm:p-12 md:p-24 bg-gray-50">
+      <header className="mb-10 text-center">
+        <img src="/logo.png" alt="Easy Calendar Logo" className="h-16 w-auto mx-auto mb-2" /> {/* Assuming you might add a logo */}
+        <h1 className="text-3xl sm:text-4xl font-bold text-gray-800">AI Calendar Assistant</h1>
+        <p className="text-gray-600 mt-1">Paste your event details below and let AI do the rest!</p>
+      </header>
+
+      <div className="w-full max-w-lg lg:max-w-xl bg-white shadow-xl rounded-lg p-6 sm:p-8">
+        <section className="mb-6">
+          <EventInput
+            value={eventText}
+            onChange={setEventText}
+            onSubmit={handleEventSubmit}
           />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
+        </section>
+
+        {isLoading && (
+          <div className="text-center py-4">
+            <p className="text-blue-600">Parsing your event, please wait...</p>
+            {/* You can add a spinner icon here */}
+          </div>
+        )}
+
+        <section className="mb-6">
+          <EventPreview event={parsedEvent} />
+        </section>
+
+        <section>
+          <ActionButtons
+            onAddToCalendar={handleAddToCalendar}
+            onShare={handleShare}
+            onRemind={handleRemind}
+            disabled={!parsedEvent || isLoading}
           />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
+        </section>
+      </div>
+
+      <footer className="mt-12 text-center text-sm text-gray-500">
+        <p>&copy; {new Date().getFullYear()} Easy Calendar. Your smart event solution.</p>
       </footer>
-    </div>
+    </main>
   );
 }
