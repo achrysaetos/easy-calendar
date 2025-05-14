@@ -20,27 +20,41 @@ export default function Home() {
   const [eventText, setEventText] = useState('');
   const [parsedEvent, setParsedEvent] = useState<ParsedEvent | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null); // Added error state
 
   const handleEventSubmit = async () => {
     if (!eventText.trim()) return;
     setIsLoading(true);
     setParsedEvent(null);
-    // Simulate API call for now
-    console.log("Submitting event text:", eventText);
-    // In a real scenario, you would call your /api/parse-event endpoint here
-    // For now, let's mock a response after a delay
-    setTimeout(() => {
-      const mockParsedEvent: ParsedEvent = {
-        title: "Mock Event Title",
-        date: "2024-07-20",
-        time: "10:00 AM",
-        location: "Mock Location",
-        originalText: eventText, // Add originalText to mock event
-      };
-      setParsedEvent(mockParsedEvent);
+    setError(null); // Clear previous errors
+
+    try {
+      const response = await fetch('/api/parse-event', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ eventText }),
+      });
+
+      if (!response.ok) {
+        // Try to parse error from response body
+        const errorData = await response.json().catch(() => null); // Gracefully handle non-JSON error responses
+        throw new Error(errorData?.error || `API Error: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      // The API returns Omit<ParsedEvent, 'originalText'_,
+      // so we add originalText back here.
+      setParsedEvent({ ...data, originalText: eventText });
+
+    } catch (err: any) {
+      console.error("Error submitting event:", err);
+      setError(err.message || "Failed to parse event. Please try again.");
+      setParsedEvent(null);
+    } finally {
       setIsLoading(false);
-      console.log("Mock event parsed:", mockParsedEvent);
-    }, 2000);
+    }
   };
 
   // Mock action handlers
@@ -60,15 +74,23 @@ export default function Home() {
         <section className="mb-6">
           <EventInput
             value={eventText}
-            onChange={setEventText}
+            onChange={(value) => {
+              setEventText(value);
+              if (error) setError(null); // Clear error when user types
+            }}
             onSubmit={handleEventSubmit}
           />
         </section>
 
         {isLoading && (
           <div className="text-center py-4">
-            <p className="text-blue-600">Parsing your event, please wait...</p>
-            {/* You can add a spinner icon here */}
+            <p className="text-blue-600 animate-pulse">Parsing your event, please wait...</p>
+          </div>
+        )}
+
+        {error && (
+          <div className="my-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-md text-sm">
+            <p><strong>Error:</strong> {error}</p>
           </div>
         )}
 
