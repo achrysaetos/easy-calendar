@@ -44,110 +44,79 @@ function parseTime(timeString: string): { hours: number; minutes: number } | nul
 }
 
 /**
- * Attempts to parse date and time strings from a ParsedEvent into Date objects.
- * This is a simplified implementation and will need robust error handling and more advanced parsing logic
- * for varied natural language date/time formats (e.g., "next Friday", "tomorrow evening").
+ * Attempts to parse start and end date-time strings from a ParsedEvent into Date objects.
+ * Handles a default duration if the end time is not provided.
  *
- * @param parsedEvent The event object with date and time strings from AI.
- * @param referenceDate The date to resolve relative terms like "tomorrow" against. Defaults to now.
+ * @param parsedEvent The event object with startDateTimeString and optionally endDateTimeString from AI.
+ * @param referenceDate The date to resolve relative terms against. Defaults to now.
  * @returns An object with start and end Date objects, or null if parsing fails.
  */
 export function parseEventDateTime(
   parsedEvent: ParsedEvent,
-  referenceDate: Date = new Date()
+  referenceDate: Date = new Date() // referenceDate might be less critical if AI provides absolute dates
 ): { start: Date; end: Date } | null {
-  if (!parsedEvent.date || !parsedEvent.time) {
-    // If AI couldn't extract date or time, we can't form a valid Date object here.
-    // We could potentially try to parse from originalText if one is missing,
-    // but that makes this function much more complex.
-    console.warn('parseEventDateTime: Missing date or time string from parsedEvent', parsedEvent);
+  if (!parsedEvent.startDateTimeString) {
+    console.warn('parseEventDateTime: Missing startDateTimeString from parsedEvent', parsedEvent);
     return null;
   }
 
-  let startDate: Date;
+  let startDateTime: Date;
+  let endDateTime: Date;
 
-  // Attempt to parse the date string.
-  // This is highly simplistic. `date-fns/parse` with multiple formats, or a more
-  // dedicated NLP date library would be better for production.
-  try {
-    // First, try to parse as ISO (e.g., "2024-07-28")
-    let potentialDate = parseISO(parsedEvent.date);
-    if (isValid(potentialDate)) {
-      startDate = potentialDate;
-    } else {
-      // Attempt common formats like "MM/dd/yyyy", "d MMMM yyyy", etc.
-      // For simplicity, we'll just try one basic format. This needs expansion.
-      // The referenceDate helps `parse` interpret ambiguous dates like "May 5th"
-      // (it will use the year from referenceDate).
-      const formatsToTry = [
-        'MM/dd/yyyy',
-        'M/d/yy',
-        'yyyy-MM-dd',
-        'MMMM d, yyyy',
-        'MMM d, yyyy',
-        'MMMM d',
-        'MMM d',
-        // Add more formats as needed
-      ];
-      let parsed = false;
-      for (const fmt of formatsToTry) {
-        potentialDate = parse(parsedEvent.date, fmt, referenceDate);
-        if (isValid(potentialDate)) {
-          startDate = potentialDate;
-          parsed = true;
-          break;
+  // Attempt to parse the startDateTimeString.
+  // AI is expected to return "YYYY-MM-DD HH:mm" or similar that parseISO or parse can handle.
+  // Using parse with a reference date can help with more formats, but parseISO is stricter.
+  startDateTime = parseISO(parsedEvent.startDateTimeString); // Try ISO first
+  if (!isValid(startDateTime)) {
+    // Fallback to a more flexible parse if ISO fails. This requires careful format string management.
+    // Example: startDateTime = parse(parsedEvent.startDateTimeString, "yyyy-MM-dd HH:mm", referenceDate);
+    // For now, we'll assume AI is somewhat consistent or use a library that handles varied inputs better for this fallback.
+    // A simple fallback trying a common format, assuming referenceDate helps.
+    startDateTime = parse(parsedEvent.startDateTimeString, "yyyy-MM-dd HH:mm", referenceDate);
+    if (!isValid(startDateTime)) {
+        // A second common format for dates like "May 20 2024 10:00"
+        startDateTime = parse(parsedEvent.startDateTimeString, "MMM d yyyy HH:mm", referenceDate);
+         if (!isValid(startDateTime)) {
+            console.error(`Failed to parse startDateTimeString: ${parsedEvent.startDateTimeString}`);
+            return null;
         }
-      }
-      if (!parsed) {
-         // Handle relative dates like "tomorrow", "next Friday" - VERY basic
-        const lowerDate = parsedEvent.date.toLowerCase();
-        startDate = new Date(referenceDate); // Start with today as reference
-        startDate = setHours(startDate, 0); // Normalize to start of day
-        startDate = setMinutes(startDate, 0);
-        startDate = setSeconds(startDate, 0);
+    }
+  }
 
-        if (lowerDate === 'today') {
-          // Already set to today
-        } else if (lowerDate === 'tomorrow') {
-          startDate.setDate(startDate.getDate() + 1);
-        } else if (lowerDate.includes('next friday')) { // Highly simplistic
-          let dayOfWeek = 5; // Friday
-          startDate.setDate(startDate.getDate() + (dayOfWeek + 7 - startDate.getDay()) % 7);
-          if (startDate <= referenceDate) startDate.setDate(startDate.getDate() + 7); // ensure it's *next*
-        } else {
-          console.error(`Failed to parse date string: ${parsedEvent.date}`);
-          return null;
-        }
+  // Attempt to parse or calculate the endDateTime.
+  if (parsedEvent.endDateTimeString) {
+    endDateTime = parseISO(parsedEvent.endDateTimeString);
+    if (!isValid(endDateTime)) {
+      // Fallback for endDateTimeString as well
+      endDateTime = parse(parsedEvent.endDateTimeString, "yyyy-MM-dd HH:mm", referenceDate);
+      if (!isValid(endDateTime)) {
+        endDateTime = parse(parsedEvent.endDateTimeString, "MMM d yyyy HH:mm", referenceDate);
       }
     }
-  } catch (error) {
-    console.error(`Error parsing date string '${parsedEvent.date}':`, error);
-    return null;
+    // If still not valid after trying to parse, or if end is before start, revert to default duration
+    if (!isValid(endDateTime) || endDateTime < startDateTime) {
+      if(!isValid(endDateTime)){
+          console.warn(`Invalid endDateTimeString: ${parsedEvent.endDateTimeString}. Defaulting to duration.`);
+      } else {
+          console.warn(`End time ${parsedEvent.endDateTimeString} is before start time ${parsedEvent.startDateTimeString}. Defaulting to duration.`);
+      }
+      endDateTime = addHours(startDateTime, DEFAULT_EVENT_DURATION_HOURS);
+    }
+  } else {
+    // Default duration if no endDateTimeString is provided
+    endDateTime = addHours(startDateTime, DEFAULT_EVENT_DURATION_HOURS);
   }
 
-  // Parse the time string
-  const timeInfo = parseTime(parsedEvent.time);
-  if (!timeInfo) {
-    console.error(`Failed to parse time string: ${parsedEvent.time}`);
+  if (!isValid(startDateTime) || !isValid(endDateTime)) {
+    console.error('Constructed startDateTime or endDateTime is invalid', { startDateTime, endDateTime });
     return null;
   }
-
-  // Combine date and time
-  // It's crucial to handle timezones correctly. Assuming the parsed times are local.
-  let startDateTime = setHours(startDate, timeInfo.hours);
-  startDateTime = setMinutes(startDateTime, timeInfo.minutes);
-  startDateTime = setSeconds(startDateTime, 0); // Clear seconds for consistency
-
-  if (!isValid(startDateTime)) {
-    console.error('Constructed startDateTime is invalid', startDateTime);
-    return null;
+  
+  // Ensure end is not before start, if it somehow passed previous checks (e.g. AI gave valid but reversed times)
+  if (endDateTime < startDateTime) {
+    console.warn('Final check: End time is before start time. Adjusting end time to default duration from start.');
+    endDateTime = addHours(startDateTime, DEFAULT_EVENT_DURATION_HOURS);
   }
-
-  // Assume a default duration if no end time is parsed (e.g., 1 hour)
-  const endDateTime = addHours(startDateTime, DEFAULT_EVENT_DURATION_HOURS);
-
-  // Consider user's timezone. For now, assume all dates are in the system's local timezone.
-  // For production, one might store UTC and convert to user's timezone for display.
 
   return { start: startDateTime, end: endDateTime };
 }

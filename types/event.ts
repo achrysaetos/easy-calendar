@@ -1,7 +1,7 @@
 export interface ParsedEvent {
   title: string;
-  date: string; // Will likely be a string from AI, e.g., "YYYY-MM-DD" or "next Friday"
-  time: string; // Will also be a string, e.g., "HH:mm AM/PM" or "noon"
+  startDateTimeString: string; // e.g., "2024-05-20 10:00" or "next Monday at 3pm"
+  endDateTimeString?: string;   // Optional, AI might provide it or we calculate it
   location: string;
   originalText: string; // The original input text from the user
 }

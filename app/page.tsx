@@ -49,7 +49,7 @@ export default function Home() {
       const currentParsedEvent: ParsedEvent = { ...dataFromApi, originalText: eventText };
       setParsedEvent(currentParsedEvent);
 
-      if (currentParsedEvent.date && currentParsedEvent.time) {
+      if (currentParsedEvent.startDateTimeString) {
         const dateTimeRange = parseEventDateTime(currentParsedEvent);
         if (dateTimeRange) {
           const foundConflicts = checkConflicts(dateTimeRange.start, dateTimeRange.end, calendarEvents);
@@ -61,9 +61,12 @@ export default function Home() {
             console.log("No conflicts found for preview.");
           }
         } else {
-          console.warn("Could not parse date/time from AI response for conflict preview.", currentParsedEvent);
+          console.warn("Could not parse startDateTimeString from AI response for conflict preview.", currentParsedEvent);
           setConflicts([]);
         }
+      } else {
+        console.warn("AI response did not include a startDateTimeString.", currentParsedEvent);
+        setConflicts([]);
       }
     } catch (err) {
       let errorMessage = "Failed to parse event. Please try again.";
@@ -130,9 +133,19 @@ export default function Home() {
 
   const handleShare = () => {
     if (!parsedEvent) return;
+
+    const eventTimeDetails = parseEventDateTime(parsedEvent);
+
     let shareText = `Event: ${parsedEvent.title}`;
-    if (parsedEvent.date) shareText += ` on ${parsedEvent.date}`;
-    if (parsedEvent.time) shareText += ` at ${parsedEvent.time}`;
+    if (eventTimeDetails) {
+      shareText += ` on ${format(eventTimeDetails.start, 'MMM d, yyyy' )}`;
+      shareText += ` from ${format(eventTimeDetails.start, 'hh:mm a' )}`;
+      shareText += ` to ${format(eventTimeDetails.end, 'hh:mm a' )}`;
+    } else if (parsedEvent.startDateTimeString) {
+      shareText += ` (Details: ${parsedEvent.startDateTimeString}`;
+      if(parsedEvent.endDateTimeString) shareText += ` to ${parsedEvent.endDateTimeString}`;
+      shareText += ")";
+    }
     if (parsedEvent.location) shareText += ` at ${parsedEvent.location}`;
     shareText += ". (Sent via Easy Calendar Assistant)";
 

@@ -17,29 +17,26 @@ export async function POST(request: Request) {
     }
 
     // Construct the prompt for OpenAI
-    const prompt = `Extract the event title, date (in YYYY-MM-DD format if possible, otherwise as is), time (in HH:mm AM/PM format if possible, otherwise as is), and location from the following text. 
-
-    If a date is specified in english like "next Friday", convert it to an actual date that can be scheduled.
-
+    const prompt = `Extract the event title, start date and time, end date and time, and location from the following text.
     Today's date is ${new Date().toISOString().split('T')[0]}, which is ${new Date().toLocaleDateString('en-US', { weekday: 'long' })}.
 
-    Respond with a JSON object ONLY, with the keys "title", "date", "time", and "location".
-    If a piece of information is not found, use an empty string for its value.
-    For example, if the text is "Lunch with Jen next Friday at noon at The Cafe", the response should be like:
-    {
-      "title": "Lunch with Jen",
-      "date": "2025-05-23", // this should be the actual date day
-      "time": "12:00 PM",
-      "location": "The Cafe"
-    }
-    If the text is "Team meeting tomorrow 10am", the response should be like:
-    {
-      "title": "Team meeting",
-      "date": "2025-05-16", // this should be the actual date day
-      "time": "10:00 AM",
-      "location": ""
-    }
-    Text: "${eventText}"`;
+    Format the start and end date/times as "YYYY-MM-DD HH:mm" (24-hour format).
+    If an end time is not specified, calculate it as 1 hour after the start time.
+    If a date is specified in relative terms (e.g., "next Friday", "tomorrow"), convert it to an absolute date (YYYY-MM-DD).
+    If a time is specified in relative terms (e.g., "noon", "evening"), convert it to a specific time (HH:mm).
+
+    Respond with a JSON object ONLY, with the keys "title", "startDateTimeString", "endDateTimeString", and "location".
+    If a piece of information is not found (e.g. location), use an empty string "" for its value. If title is missing, try to infer a sensible one or use "Untitled Event".
+
+    Examples:
+    1. Text: "Lunch with Jen next Friday at noon at The Cafe for 2 hours"
+       Expected JSON: { "title": "Lunch with Jen", "startDateTimeString": "YYYY-MM-DD 12:00", "endDateTimeString": "YYYY-MM-DD 14:00", "location": "The Cafe" } (Note: YYYY-MM-DD should be the resolved date of next Friday)
+    2. Text: "Team meeting tomorrow 10am at the office"
+       Expected JSON: { "title": "Team meeting", "startDateTimeString": "YYYY-MM-DD 10:00", "endDateTimeString": "YYYY-MM-DD 11:00", "location": "the office" } (Note: YYYY-MM-DD should be the resolved date of tomorrow)
+    3. Text: "Doctor's appointment on June 5th, 3 PM"
+       Expected JSON: { "title": "Doctor's appointment", "startDateTimeString": "YYYY-06-05 15:00", "endDateTimeString": "YYYY-06-05 16:00", "location": "" } (Note: YYYY should be the current or upcoming year as appropriate)
+
+    Text to parse: "${eventText}"`;
 
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini", // Or your preferred model, e.g., gpt-4
@@ -67,16 +64,17 @@ export async function POST(request: Request) {
     }
 
     // Validate the structure of parsedDetails (optional but good practice)
-    if (!parsedDetails.title && !parsedDetails.date && !parsedDetails.time && !parsedDetails.location) {
-        // If all fields are empty, it might indicate an issue or very vague input
-        console.warn("OpenAI returned all empty fields for text:", eventText, "Response:", parsedDetails);
-        // Decide if this should be an error or handled differently
+    if (!parsedDetails.title && !parsedDetails.startDateTimeString && !parsedDetails.location) {
+        // If key fields are missing, it might indicate an issue or very vague input
+        console.warn("OpenAI returned potentially incomplete fields for text:", eventText, "Response:", parsedDetails);
+        // Decide if this should be an error or handled differently.
+        // For now, we'll proceed and let the frontend/date parsing utilities handle potentially empty strings.
     }
 
     const parsedEvent: Omit<ParsedEvent, 'originalText'> = {
-      title: parsedDetails.title || '',
-      date: parsedDetails.date || '',
-      time: parsedDetails.time || '',
+      title: parsedDetails.title || 'Untitled Event', // Provide a default title
+      startDateTimeString: parsedDetails.startDateTimeString || '',
+      endDateTimeString: parsedDetails.endDateTimeString || '', // This might be empty if AI is expected to only provide start
       location: parsedDetails.location || '',
     };
 
