@@ -5,7 +5,10 @@ import React, { useState } from 'react';
 import EventInput from '../components/EventInput';
 import EventPreview from '../components/EventPreview';
 import ActionButtons from '../components/ActionButtons';
-import { ParsedEvent } from '../types/event'; // Import the ParsedEvent type
+import { ParsedEvent, CalendarEvent } from '../types/event'; // Add CalendarEvent
+import { mockCalendarEvents } from '../data/mockCalendar';
+import { parseEventDateTime } from '../lib/dateUtils';
+import { checkConflicts } from '../lib/calendarUtils';
 
 // Temporary ParsedEvent type - will move to types/event.ts
 // interface ParsedEvent {  <-- REMOVE THIS BLOCK
@@ -21,12 +24,14 @@ export default function Home() {
   const [parsedEvent, setParsedEvent] = useState<ParsedEvent | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null); // Added error state
+  const [conflicts, setConflicts] = useState<CalendarEvent[]>([]); // New state for conflicts
 
   const handleEventSubmit = async () => {
     if (!eventText.trim()) return;
     setIsLoading(true);
     setParsedEvent(null);
-    setError(null); // Clear previous errors
+    setError(null);
+    setConflicts([]); // Clear previous conflicts
 
     try {
       const response = await fetch('/api/parse-event', {
@@ -43,10 +48,26 @@ export default function Home() {
         throw new Error(errorData?.error || `API Error: ${response.status} ${response.statusText}`);
       }
 
-      const data = await response.json();
-      // The API returns Omit<ParsedEvent, 'originalText'_,
-      // so we add originalText back here.
-      setParsedEvent({ ...data, originalText: eventText });
+      const dataFromApi = await response.json();
+      const currentParsedEvent: ParsedEvent = { ...dataFromApi, originalText: eventText };
+      setParsedEvent(currentParsedEvent);
+
+      // Now, try to parse date/time and check for conflicts
+      if (currentParsedEvent.date && currentParsedEvent.time) {
+        const dateTimeRange = parseEventDateTime(currentParsedEvent);
+        if (dateTimeRange) {
+          const foundConflicts = checkConflicts(dateTimeRange.start, dateTimeRange.end, mockCalendarEvents);
+          setConflicts(foundConflicts);
+          if (foundConflicts.length > 0) {
+            console.log("Conflicts found:", foundConflicts);
+          } else {
+            console.log("No conflicts found for the parsed event.");
+          }
+        } else {
+          console.warn("Could not parse date/time from AI response to check for conflicts.", currentParsedEvent);
+          // Optionally, set an error or a message indicating date/time couldn't be fully resolved for conflict checking
+        }
+      }
 
     } catch (err: any) {
       console.error("Error submitting event:", err);
@@ -95,7 +116,7 @@ export default function Home() {
         )}
 
         <section className="mb-6">
-          <EventPreview event={parsedEvent} />
+          <EventPreview event={parsedEvent} conflicts={conflicts} />
         </section>
 
         <section>
