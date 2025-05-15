@@ -27,13 +27,16 @@ const EventPreview: React.FC<EventPreviewProps> = ({ event, conflicts }) => {
   }
 
   // Parse the event date/time strings to Date objects for display
-  const eventTimeDetails = event.startDateTimeString ? parseEventDateTime(event) : null;
+  const eventTimeDetails = event.startDateTimeString && event.startDateTimeString !== 'N/A' ? parseEventDateTime(event) : null;
+
+  const safeTitle = event.title && event.title !== 'N/A' ? event.title : <span className="text-gray-400">N/A</span>;
+  const safeLocation = event.location && event.location !== 'N/A' ? event.location : <span className="text-gray-400">N/A</span>;
 
   return (
     <div className="p-4 border border-gray-200 rounded-lg bg-white shadow-sm">
       <h2 className="text-xl font-semibold mb-3 text-gray-700">Event Preview</h2>
       <div className="space-y-1 text-gray-600">
-        <p><strong>Title:</strong> {event.title || <span className="text-gray-400">N/A</span>}</p>
+        <p><strong>Title:</strong> {safeTitle}</p>
         {eventTimeDetails ? (
           <>
             <p><strong>Date:</strong> {format(eventTimeDetails.start, 'MMM d, yyyy')}</p>
@@ -41,12 +44,14 @@ const EventPreview: React.FC<EventPreviewProps> = ({ event, conflicts }) => {
           </>
         ) : (
           <>
-            <p><strong>Start:</strong> {event.startDateTimeString || <span className="text-gray-400">N/A</span>}</p>
-            {event.endDateTimeString && <p><strong>End:</strong> {event.endDateTimeString}</p>}
-            {!event.startDateTimeString && <p className="text-orange-500 text-sm">Could not determine event time.</p>}
+            <p><strong>Start:</strong> {event.startDateTimeString && event.startDateTimeString !== 'N/A' ? event.startDateTimeString : <span className="text-gray-400">N/A</span>}</p>
+            {event.endDateTimeString && event.endDateTimeString !== 'N/A' ? (
+              <p><strong>End:</strong> {event.endDateTimeString}</p>
+            ) : null}
+            {(!event.startDateTimeString || event.startDateTimeString === 'N/A') && <p className="text-orange-500 text-sm">Could not determine event time.</p>}
           </>
         )}
-        <p><strong>Location:</strong> {event.location || <span className="text-gray-400">N/A</span>}</p>
+        <p><strong>Location:</strong> {safeLocation}</p>
         {event.originalText && <p className="mt-2 text-xs text-gray-400"><strong>Original:</strong> <em>{event.originalText}</em></p>}
       </div>
 

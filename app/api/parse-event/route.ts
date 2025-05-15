@@ -72,10 +72,10 @@ export async function POST(request: Request) {
     }
 
     const parsedEvent: Omit<ParsedEvent, 'originalText'> = {
-      title: parsedDetails.title || 'Untitled Event', // Provide a default title
-      startDateTimeString: parsedDetails.startDateTimeString || '',
-      endDateTimeString: parsedDetails.endDateTimeString || '', // This might be empty if AI is expected to only provide start
-      location: parsedDetails.location || '',
+      title: parsedDetails.title && parsedDetails.title.trim() ? parsedDetails.title : 'Untitled Event',
+      startDateTimeString: parsedDetails.startDateTimeString && parsedDetails.startDateTimeString.trim() ? parsedDetails.startDateTimeString : '',
+      endDateTimeString: parsedDetails.endDateTimeString && parsedDetails.endDateTimeString.trim() ? parsedDetails.endDateTimeString : '', // Keep empty if not present
+      location: parsedDetails.location && parsedDetails.location.trim() ? parsedDetails.location : '',
     };
 
     return NextResponse.json(parsedEvent);
