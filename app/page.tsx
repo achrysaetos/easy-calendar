@@ -201,7 +201,7 @@ export default function Home() {
     <main className="flex min-h-screen flex-col items-center p-6 sm:p-12 md:p-24 bg-gray-50">
       <header className="mb-10 text-center">
         <h1 className="text-3xl sm:text-4xl font-bold text-gray-800">AI Calendar Assistant</h1>
-        <p className="text-gray-600 mt-1">Paste your event details below and let AI do the rest!</p>
+        <p className="text-gray-600 mt-1">Paste your event details below and let AI organize your calendar!</p>
       </header>
 
       <div className="w-full max-w-lg lg:max-w-xl bg-white shadow-xl rounded-lg p-6 sm:p-8">
