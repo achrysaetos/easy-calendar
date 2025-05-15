@@ -44,7 +44,7 @@ A Next.js calendar web app that transforms natural language event descriptions i
 
 *   **Vercel AI SDK:** Use this framework to make LLM calls more consistent, reliable, and clean. Code organization will be improved and LLM calls will be more performant.
 *   **Structured Output:** Implement Zod for schema validation of the structured output. This will increase the accuracy of the parsed data and provide better error handling for unexpected inputs.
-*   **Evals platform:** Integrate with an evals platform Braintrust or Humanloop to get feedback on the model's performance and improve it over time.
+*   **Evals platform:** Integrate with an evals platform like Braintrust or Humanloop to get feedback on the model's performance and improve it over time.
 
 **Production Features:**
 

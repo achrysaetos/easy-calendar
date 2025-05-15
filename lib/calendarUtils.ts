@@ -1,5 +1,4 @@
 import { CalendarEvent, ParsedEvent } from '../types/event';
-import { isWithinInterval, parseISO } from 'date-fns'; // We might not need parseISO here if dates are already Date objects
 import { parseEventDateTime } from './dateUtils'; // Corrected import path
 
 /**
