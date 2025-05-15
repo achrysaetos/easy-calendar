@@ -27,13 +27,6 @@ export const mockCalendarEvents: CalendarEvent[] = [
   },
   {
     id: '3',
-    title: 'Dentist Appointment',
-    start: createDate(15, 10, 30), // Potential conflict with Team Meeting
-    end: createDate(15, 11, 0),
-    location: 'Oak Street Dental',
-  },
-  {
-    id: '4',
     title: 'Evening Yoga Class',
     start: createDate(20, 18, 0),
     end: createDate(20, 19, 0),

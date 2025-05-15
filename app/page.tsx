@@ -11,15 +11,6 @@ import { parseEventDateTime } from '../lib/dateUtils';
 import { checkConflicts } from '../lib/calendarUtils';
 import { format } from 'date-fns'; // For formatting dates in share text
 
-// Temporary ParsedEvent type - will move to types/event.ts
-// interface ParsedEvent {  <-- REMOVE THIS BLOCK
-//   title: string;
-//   date: string;
-//   time: string;
-//   location: string;
-//   // originalText: string;
-// }
-
 export default function Home() {
   const [eventText, setEventText] = useState('');
   const [parsedEvent, setParsedEvent] = useState<ParsedEvent | null>(null);
@@ -173,7 +164,6 @@ export default function Home() {
   return (
     <main className="flex min-h-screen flex-col items-center p-6 sm:p-12 md:p-24 bg-gray-50">
       <header className="mb-10 text-center">
-        <img src="/logo.png" alt="Easy Calendar Logo" className="h-16 w-auto mx-auto mb-2" /> {/* Assuming you might add a logo */}
         <h1 className="text-3xl sm:text-4xl font-bold text-gray-800">AI Calendar Assistant</h1>
         <p className="text-gray-600 mt-1">Paste your event details below and let AI do the rest!</p>
       </header>
@@ -192,7 +182,7 @@ export default function Home() {
         </section>
 
         {isLoading && (
-          <div className="text-center py-4">
+          <div className="text-center pb-6">
             <p className="text-blue-600 animate-pulse">Parsing event...</p>
           </div>
         )}
@@ -209,9 +199,11 @@ export default function Home() {
           </div>
         )}
 
-        <section className="mb-6">
-          <EventPreview event={parsedEvent} conflicts={conflicts} />
-        </section>
+        {!isLoading && (
+          <section className="mb-6">
+            <EventPreview event={parsedEvent} conflicts={conflicts} />
+          </section>
+        )}
 
         <section className="mb-8">
           <ActionButtons

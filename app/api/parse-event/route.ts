@@ -18,26 +18,31 @@ export async function POST(request: Request) {
 
     // Construct the prompt for OpenAI
     const prompt = `Extract the event title, date (in YYYY-MM-DD format if possible, otherwise as is), time (in HH:mm AM/PM format if possible, otherwise as is), and location from the following text. 
+
+    If a date is specified in english like "next Friday", convert it to an actual date that can be scheduled.
+
+    Today's date is ${new Date().toISOString().split('T')[0]}, which is ${new Date().toLocaleDateString('en-US', { weekday: 'long' })}.
+
     Respond with a JSON object ONLY, with the keys "title", "date", "time", and "location".
     If a piece of information is not found, use an empty string for its value.
     For example, if the text is "Lunch with Jen next Friday at noon at The Cafe", the response should be like:
     {
       "title": "Lunch with Jen",
-      "date": "next Friday", 
+      "date": "2025-05-23", // this should be the actual date day
       "time": "12:00 PM",
       "location": "The Cafe"
     }
     If the text is "Team meeting tomorrow 10am", the response should be like:
     {
       "title": "Team meeting",
-      "date": "tomorrow",
+      "date": "2025-05-16", // this should be the actual date day
       "time": "10:00 AM",
       "location": ""
     }
     Text: "${eventText}"`;
 
     const completion = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo-0125", // Or your preferred model, e.g., gpt-4
+      model: "gpt-4o-mini", // Or your preferred model, e.g., gpt-4
       messages: [
         { role: "system", content: "You are an assistant that extracts event details and responds in JSON format." },
         { role: "user", content: prompt },
