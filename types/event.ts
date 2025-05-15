@@ -13,4 +13,11 @@ export interface CalendarEvent {
   end: Date;   // JavaScript Date object for end time
   location?: string; // Optional location
   // We might add other properties like description, attendees, etc. later
+}
+
+export interface Reminder {
+  id: string;
+  eventTitle: string;
+  reminderTime: string;
+  originalEventDetails: ParsedEvent; // To store the context of what event this reminder is for
 } 

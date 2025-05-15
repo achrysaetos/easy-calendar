@@ -5,10 +5,10 @@ import React, { useState, useEffect } from 'react';
 import EventInput from '../components/EventInput';
 import EventPreview from '../components/EventPreview';
 import ActionButtons from '../components/ActionButtons';
-import { ParsedEvent, CalendarEvent } from '../types/event'; // Add CalendarEvent
+import { ParsedEvent, CalendarEvent, Reminder } from '../types/event'; // Add CalendarEvent and Reminder
 import { mockCalendarEvents } from '../data/mockCalendar';
 import { parseEventDateTime } from '../lib/dateUtils';
-import { checkConflicts } from '../lib/calendarUtils';
+import { checkConflicts, findExactMatch } from '../lib/calendarUtils'; // Added findExactMatch
 import { format } from 'date-fns'; // For formatting dates in share text
 
 export default function Home() {
@@ -19,6 +19,7 @@ export default function Home() {
   const [conflicts, setConflicts] = useState<CalendarEvent[]>([]);
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
+  const [reminders, setReminders] = useState<Reminder[]>([]); // New state for reminders
 
   useEffect(() => {
     setCalendarEvents(mockCalendarEvents);
@@ -87,7 +88,7 @@ export default function Home() {
       setFeedbackMessage("No event to add. Please parse an event first.");
       return;
     }
-    setFeedbackMessage(null);
+    setFeedbackMessage(null); // Clear previous feedback
 
     const eventTimeDetails = parseEventDateTime(parsedEvent);
     if (!eventTimeDetails) {
@@ -95,20 +96,33 @@ export default function Home() {
         `Could not determine a specific date/time for "${parsedEvent.title}" to add to calendar. Please ensure date and time are clear.`
       );
       console.warn("Failed to parse date/time for adding to calendar:", parsedEvent);
-      console.log("Current calendar events (add failed - parse error):", calendarEvents);
       return;
     }
 
-    const currentConflicts = checkConflicts(eventTimeDetails.start, eventTimeDetails.end, calendarEvents);
-
-    if (currentConflicts.length > 0) {
+    // Check for exact match first
+    const exactMatch = findExactMatch(parsedEvent, calendarEvents);
+    if (exactMatch) {
       setFeedbackMessage(
-        `Cannot add event: "${parsedEvent.title}" due to conflicts with your existing calendar. Please resolve them first.`
+        `This event has already been added to your calendar.`
       );
-      setConflicts(currentConflicts);
-      console.warn("Attempted to add event with conflicts:", parsedEvent, currentConflicts);
-      console.log("Current calendar events (add failed - conflict):", calendarEvents);
+      // Optionally, you might want to show this specific conflict instead of general time conflicts
+      // For now, clearing conflicts as the primary issue is the exact match.
+      setConflicts([]); 
+      console.warn("Attempted to add an exact duplicate event:", parsedEvent, exactMatch);
       return;
+    }
+
+    // Check for time-based conflicts (for warning purposes)
+    const timeConflicts = checkConflicts(eventTimeDetails.start, eventTimeDetails.end, calendarEvents);
+    setConflicts(timeConflicts); // Update conflicts state to show warnings in EventPreview
+
+    if (timeConflicts.length > 0) {
+      console.warn(
+        `Adding event "${parsedEvent.title}" with time conflicts:`,
+        timeConflicts.map(c => `${c.title} @ ${format(c.start, 'Pp')}`)
+      );
+      // Warning is shown via EventPreview due to setConflicts above.
+      // User can still add, so no return here based on timeConflicts.
     }
 
     const newCalendarEntry: CalendarEvent = {
@@ -124,11 +138,13 @@ export default function Home() {
       console.log("Event added. Updated calendar events:", updatedEvents);
       return updatedEvents;
     });
+    
     setFeedbackMessage(`"${newCalendarEntry.title}" added to your calendar!`);
     
+    // Clear input for next event, but keep parsedEvent and its conflicts for further actions
     setEventText('');
-    setParsedEvent(null);
-    setConflicts([]);
+    // setParsedEvent(null); // Keep parsedEvent to allow further actions
+    // setConflicts([]); // Keep conflicts related to the parsedEvent
   };
 
   const handleShare = () => {
@@ -166,7 +182,14 @@ export default function Home() {
       "1 hour before"
     );
     if (reminderTime) {
-      const message = `Reminder set for "${parsedEvent.title}" (${reminderTime}). (Simulated)`;
+      const newReminder: Reminder = {
+        id: Date.now().toString(),
+        eventTitle: parsedEvent.title || "Untitled Event",
+        reminderTime: reminderTime,
+        originalEventDetails: parsedEvent,
+      };
+      setReminders(prevReminders => [...prevReminders, newReminder]);
+      const message = `Reminder set for "${newReminder.eventTitle}" (${newReminder.reminderTime}).`;
       console.log(message, parsedEvent);
       setFeedbackMessage(message);
     } else {
@@ -196,7 +219,7 @@ export default function Home() {
 
         {isLoading && (
           <div className="text-center pb-6">
-            <p className="text-blue-600 animate-pulse">Parsing event...</p>
+            <p className="text-blue-600 animate-pulse">Generating details...</p>
           </div>
         )}
 
@@ -239,6 +262,24 @@ export default function Home() {
                     {format(calEvent.start, 'EEE, MMM d, yyyy hh:mm a')} - {format(calEvent.end, 'hh:mm a')}
                   </p>
                   {calEvent.location && <p className="text-xs text-gray-500">Location: {calEvent.location}</p>}
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        {/* Display section for all reminders */}
+        {reminders.length > 0 && (
+          <section className="mt-6">
+            <h2 className="text-xl font-semibold mb-3 text-gray-700">Your Reminders</h2>
+            <ul className="space-y-3">
+              {reminders.map(reminder => (
+                <li key={reminder.id} className="p-3 bg-blue-50 border border-blue-200 rounded-md shadow-sm">
+                  <h3 className="font-medium text-gray-800">Reminder for: {reminder.eventTitle}</h3>
+                  <p className="text-sm text-gray-600">
+                    When: {reminder.reminderTime}
+                  </p>
+                  {/* Optionally, display more details from reminder.originalEventDetails if needed */}
                 </li>
               ))}
             </ul>

@@ -1,5 +1,6 @@
-import { CalendarEvent } from '../types/event';
+import { CalendarEvent, ParsedEvent } from '../types/event';
 import { isWithinInterval, parseISO } from 'date-fns'; // We might not need parseISO here if dates are already Date objects
+import { parseEventDateTime } from './dateUtils'; // Corrected import path
 
 /**
  * Checks if two date ranges overlap.
@@ -45,6 +46,45 @@ export function checkConflicts(
   }
 
   return conflictingEvents;
+}
+
+/**
+ * Checks if a new parsed event is an exact duplicate of any existing calendar event.
+ * An exact duplicate has the same title, start time, end time, and location.
+ *
+ * @param parsedEvent The new event parsed from user input.
+ * @param existingEvents An array of existing calendar events.
+ * @returns The existing CalendarEvent if an exact match is found, otherwise null.
+ */
+export function findExactMatch(
+  parsedEvent: ParsedEvent,
+  existingEvents: CalendarEvent[]
+): CalendarEvent | null {
+  if (!parsedEvent) return null;
+
+  const newEventTimes = parseEventDateTime(parsedEvent);
+  if (!newEventTimes) {
+    // If the new event's date/time can't be parsed, it can't be an exact match.
+    console.warn("findExactMatch: Could not parse date/time for the new event.", parsedEvent);
+    return null;
+  }
+
+  for (const existingEvent of existingEvents) {
+    // Normalize locations for comparison (treat empty, null, undefined as same)
+    const newEventLocation = parsedEvent.location?.trim() || "";
+    const existingEventLocation = existingEvent.location?.trim() || "";
+
+    if (
+      parsedEvent.title === existingEvent.title &&
+      newEventTimes.start.getTime() === existingEvent.start.getTime() &&
+      newEventTimes.end.getTime() === existingEvent.end.getTime() &&
+      newEventLocation === existingEventLocation
+    ) {
+      return existingEvent; // Found an exact match
+    }
+  }
+
+  return null; // No exact match found
 }
 
 // Example Usage (can be kept for testing or removed):
