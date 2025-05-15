@@ -10,14 +10,6 @@ const createDate = (day: number, hour: number, minute: number = 0) => {
   return new Date(CURRENT_YEAR, CURRENT_MONTH, day, hour, minute);
 };
 
-// For "Project Deadline Review" (id: '3')
-let projectDeadlineYear = CURRENT_YEAR;
-let projectDeadlineMonth = CURRENT_MONTH + 1; // JS months are 0-11
-if (projectDeadlineMonth > 11) { // Handle year rollover
-  projectDeadlineMonth = 0; // January
-  projectDeadlineYear += 1;
-}
-
 export const mockCalendarEvents: CalendarEvent[] = [
   {
     id: '1',
@@ -35,21 +27,13 @@ export const mockCalendarEvents: CalendarEvent[] = [
   },
   {
     id: '3',
-    title: 'Project Deadline Review',
-    // Correctly create date for 2nd of next month at 2:00 PM (14:00)
-    start: new Date(projectDeadlineYear, projectDeadlineMonth, 2, 14, 0),
-    // End 1 hour later, at 3:00 PM (15:00)
-    end: new Date(projectDeadlineYear, projectDeadlineMonth, 2, 15, 0),
-  },
-  {
-    id: '4',
     title: 'Dentist Appointment',
     start: createDate(15, 10, 30), // Potential conflict with Team Meeting
     end: createDate(15, 11, 0),
     location: 'Oak Street Dental',
   },
   {
-    id: '5',
+    id: '4',
     title: 'Evening Yoga Class',
     start: createDate(20, 18, 0),
     end: createDate(20, 19, 0),
