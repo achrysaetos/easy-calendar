@@ -1,6 +1,8 @@
 # AI-Powered Calendar Assistant
 
-A Next.js calendar web app that transforms natural language event descriptions into structured calendar entries using AI to parse event details and check for scheduling conflicts.
+A Next.js calendar web app that transforms natural language event descriptions into structured calendar entries using AI to parse event details and check for scheduling conflicts. 
+
+Visit the deployed version at [https://easy-calendar-three.vercel.app/](https://easy-calendar-three.vercel.app/)
 
 ## Core Idea & Technical Approach
 
@@ -37,6 +39,8 @@ A Next.js calendar web app that transforms natural language event descriptions i
 1. Create a `.env.local` file in the project root and add your personal `OPENAI_API_KEY`.
 
 2. Run the app with `npm run dev` and access at `http://localhost:3000`.
+
+OR you can use the deployed version at [https://easy-calendar-three.vercel.app/](https://easy-calendar-three.vercel.app/).
 
 ## Current Limitations & Future Work
 
