@@ -2,7 +2,7 @@
 
 A Next.js calendar web app that transforms natural language event descriptions into structured calendar entries using AI to parse event details and check for scheduling conflicts. 
 
-Visit the deployed version at [https://easy-calendar-three.vercel.app/](https://easy-calendar-three.vercel.app/)
+Visit the deployed version at [https://easy-calendar-ten.vercel.app/](https://easy-calendar-ten.vercel.app/)
 
 ## Core Idea & Technical Approach
 
@@ -40,7 +40,7 @@ Visit the deployed version at [https://easy-calendar-three.vercel.app/](https://
 
 2. Run the app with `npm run dev` and access at `http://localhost:3000`.
 
-OR you can use the deployed version at [https://easy-calendar-three.vercel.app/](https://easy-calendar-three.vercel.app/).
+OR you can use the deployed version at [https://easy-calendar-ten.vercel.app/](https://easy-calendar-ten.vercel.app/).
 
 ## Current Limitations & Future Work
 
